@@ -1,0 +1,11 @@
+version: '3'
+services:
+  mysql-server:
+    container_name: "mysql"
+    image: "mysql:5.7"
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "zZijbfa64LnL2quYCFyH5jcRn2f3iUNLSrfRwiX3"
+      MYSQL_DATABASE: "book_db"
+      TZ: "Europe/Berlin"
