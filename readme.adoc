@@ -1,0 +1,89 @@
+= Spring Boot: JPA Bulk Database Insert
+
+In this project, I achieved reducing 10k records insertion time from 183 seconds to just 5 secs.
+
+For this I did teh following changes :-
+
+==== 1) Change the number of records while inserting.
+
+i. Set hibernate batchin insert size with the folowing properties.
+
+
+    spring.jpa.properties.hibernate.jdbc.batch_size=30
+
+ii. Add connection string properties.
+
+
+    cachePrepStmts=true
+    &useServerPrepStmts=true
+    &rewriteBatchedStatements=true
+
+    e.g
+    jdbc:mysql://localhost:3306/BOOKS_DB?serverTimezone=UTC&cachePrepStmts=true&useServerPrepStmts=true&rewriteBatchedStatements=true
+
+iii. Changed the code for inserting,  so that saveAll methods get batch sizes of 30 to insert as per what we also set in the properties file.
+
+A very crude implementation of something like this.
+
+        for (int i = 0; i < totalObjects; i = i + batchSize) {
+        if( i+ batchSize > totalObjects){
+        List<Book> books1 = books.subList(i, totalObjects - 1);
+        repository.saveAll(books1);
+        break;
+        }
+        List<Book> books1 = books.subList(i, i + batchSize);
+        repository.saveAll(books1);
+        }
+
+This reduced the time by not that much, but dropped from 185 secs to 153 Secs. That's approximately 18% improvement.
+
+
+==== 2)  Change the ID generation strategy.
+
+This made a major impact.
+
+I stopped usign the `@GeneratedValue` annotation with strategy i.e `GenerationType.IDENTITY` on my entity class.
+Hibernate has disabled batch update with this strategy, Because it has to make a select call to get the id from the database to insert each row.
+
+I changed the strategy to SEQUENCE and provided a sequence generator.
+
+    public class Book {
+    @Id
+    @GeneratedValue(strategy = SEQUENCE, generator = "seqGen")
+    @SequenceGenerator(name = "seqGen", sequenceName = "seq", initialValue = 1)
+    private Long id;
+    }
+
+This change drastically changed the insert performance as Hibernate was able to leverage bulk insert.
+From the previous performance improvement of 153 secs, the time to insert 10k records reduced to only 9 secs. Thats an increase in performance by nearly 95%.
+
+Next, I pushed it further to use higher batch sizes and I noticed that doubling the batch size does not double down on time. The time to insert only gradually reduces.
+
+|===
+|Batch Size | Time to insert (Secs)
+
+|30
+|9.5
+
+|60
+|6.48
+
+|200
+|5.04
+
+|500
+|4.46
+
+|1000
+|4.39
+
+|2000
+|4.5
+
+|5000
+|5.09
+
+|===
+
+
+The most optimal I found for my case was a batch size of 1000 which took around 4.39 secs for 10K records. After that, I saw the performance degrading as you can see in the graph.
