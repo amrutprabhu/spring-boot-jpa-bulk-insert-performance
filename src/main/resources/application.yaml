@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:13306/BOOK_DB?serverTimezone=UTC&cachePrepStmts=true&useServerPrepStmts=true&rewriteBatchedStatements=true
+    username: root
+    password: zZijbfa64LnL2quYCFyH5jcRn2f3iUNLSrfRwiX3
+  jpa:
+   # show-sql: true
+    generate-ddl: true
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 1000
+#        cache:
+#          use_second_level_cache: true
+#        order_updates: true
+#        order_inserts: true
+#        generate_statistics: true
